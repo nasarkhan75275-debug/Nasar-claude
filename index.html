@@ -2,24 +2,23 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NASAR AI</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui;background:#0f0f0f;color:#fff;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+body{margin:0;font-family:system-ui;background:#0f0f0f;color:#fff;display:flex;flex-direction:column;height:100vh}
 #top{padding:14px;text-align:center;background:#171717;border-bottom:1px solid #333;font-weight:800}
-#chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+#chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 .bubble{max-width:85%;padding:12px 14px;border-radius:16px;white-space:pre-wrap}
 .me{background:#19c37d;color:#000;align-self:flex-end}
 .bot{background:#2a2a2a;align-self:flex-start}
-#bar{padding:10px;display:flex;gap:8px;background:#171717;border-top:1px solid #333;position:relative;z-index:999}
+#bar{padding:10px;display:flex;gap:8px;background:#171717;border-top:1px solid #333}
 #bar input{flex:1;padding:14px;border-radius:25px;border:1px solid #444;background:#2a2a2a;color:#fff;outline:none;font-size:16px}
-#bar button{padding:14px 24px;border-radius:25px;border:none;background:#19c37d;color:#000;font-weight:900;cursor:pointer;min-width:70px;-webkit-tap-highlight-color: transparent;touch-action: manipulation;}
-#bar button:active{background:#14a86a;transform:scale(0.95)}
+#bar button{padding:14px 24px;border-radius:25px;border:none;background:#19c37d;color:#000;font-weight:900}
 </style>
 </head>
 <body>
-<div id="top">🤖 NASAR AI • Ready</div>
+<div id="top">🤖 NASAR AI • Fixed</div>
 <div id="chat"></div>
 <div id="bar">
 <input id="msg" placeholder="Yahan likh...">
@@ -27,49 +26,28 @@ body{margin:0;font-family:system-ui;background:#0f0f0f;color:#fff;display:flex;f
 </div>
 <script>
 const GROQ_API_KEY = "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";
-const chatBox = document.getElementById('chat');
-const msgInput = document.getElementById('msg');
-const sendBtn = document.getElementById('sendBtn');
-
-function addMsg(t,c){
- let d=document.createElement('div');
- d.className='bubble '+c;
- d.innerText=t;
- chatBox.appendChild(d);
- chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function sendMessage(){
- let q = msgInput.value.trim();
- if(!q) return;
- addMsg(q,'me');
- msgInput.value='';
- 
- if(GROQ_API_KEY.includes("YAHAN_APNI")){
-   addMsg("Bhai Line 32 pe key daal de pehle!","bot");
-   return;
- }
- let bot = document.createElement('div');
- bot.className='bubble bot';
- bot.innerText='Soch raha hu...';
- chatBox.appendChild(bot);
- 
- fetch("https://api.groq.com/openai/v1/chat/completions",{
-  method:"POST",
-  headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_API_KEY},
-  body:JSON.stringify({model:"llama-3.1-8b-instant",messages:[{role:"user",content:q}]})
- }).then(r=>r.json()).then(j=>{
-  if(j.error) bot.innerText="Error: "+j.error.message;
+const chatBox=document.getElementById('chat');
+const msgInput=document.getElementById('msg');
+const sendBtn=document.getElementById('sendBtn');
+function addMsg(t,c){let d=document.createElement('div');d.className='bubble '+c;d.innerText=t;chatBox.appendChild(d);chatBox.scrollTop=chatBox.scrollHeight;return d;}
+async function sendMessage(){
+ let q=msgInput.value.trim(); if(!q) return;
+ addMsg(q,'me'); msgInput.value='';
+ let bot=addMsg('Soch raha hu...','bot');
+ try{
+  let res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+   method:"POST",
+   headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_API_KEY},
+   body:JSON.stringify({model:"openai/gpt-oss-20b",messages:[{role:"user",content:q}]})
+  });
+  let j=await res.json();
+  if(j.error) bot.innerText="Groq Error: "+j.error.message;
   else bot.innerText=j.choices[0].message.content;
- }).catch(e=>{bot.innerText="Error: "+e.message});
+ }catch(e){bot.innerText="Network Error: "+e.message}
 }
-
-sendBtn.addEventListener('click', sendMessage);
-sendBtn.addEventListener('touchend', function(e){ e.preventDefault(); sendMessage(); });
-msgInput.addEventListener('keydown', function(e){ if(e.key==='Enter') sendMessage(); });
-
-addMsg("Hi Nasar! Button ab 100% kaam karega, tap kar!","bot");
-console.log("NASAR AI Loaded - Button Ready");
+sendBtn.onclick=sendMessage;
+msgInput.addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage()});
+addMsg("Hi Nasar! Ab model fixed hai, ab chalega!","bot");
 </script>
 </body>
 </html>
