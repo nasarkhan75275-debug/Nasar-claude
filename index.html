@@ -2,104 +2,74 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>NASAR AI</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui;background:#0f0f0f;color:#fff;display:flex;flex-direction:column;height:100vh}
-#top{padding:14px;text-align:center;background:#171717;border-bottom:1px solid #333;font-weight:800;font-size:17px;position:sticky;top:0;z-index:10}
-#chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-.bubble{max-width:85%;padding:12px 14px;border-radius:16px;word-wrap:break-word;white-space:pre-wrap;line-height:1.4}
-.me{background:#19c37d;color:#000;align-self:flex-end;border-bottom-right-radius:4px}
-.bot{background:#2a2a2a;align-self:flex-start;border-bottom-left-radius:4px}
-#bar{display:flex;padding:12px;gap:8px;background:#171717;border-top:1px solid #333;align-items:center}
-#bar input{flex:1;padding:14px 16px;border-radius:25px;border:1px solid #444;background:#2a2a2a;color:#fff;outline:none;font-size:16px}
-#bar button{padding:12px 22px;border-radius:25px;border:none;background:#19c37d;color:#000;font-weight:800;font-size:15px;cursor:pointer}
-#error{color:#ff6b6b;text-align:center;padding:5px;font-size:13px;display:none}
+body{margin:0;font-family:system-ui;background:#0f0f0f;color:#fff;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+#top{padding:14px;text-align:center;background:#171717;border-bottom:1px solid #333;font-weight:800}
+#chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+.bubble{max-width:85%;padding:12px 14px;border-radius:16px;white-space:pre-wrap}
+.me{background:#19c37d;color:#000;align-self:flex-end}
+.bot{background:#2a2a2a;align-self:flex-start}
+#bar{padding:10px;display:flex;gap:8px;background:#171717;border-top:1px solid #333;position:relative;z-index:999}
+#bar input{flex:1;padding:14px;border-radius:25px;border:1px solid #444;background:#2a2a2a;color:#fff;outline:none;font-size:16px}
+#bar button{padding:14px 24px;border-radius:25px;border:none;background:#19c37d;color:#000;font-weight:900;cursor:pointer;min-width:70px;-webkit-tap-highlight-color: transparent;touch-action: manipulation;}
+#bar button:active{background:#14a86a;transform:scale(0.95)}
 </style>
 </head>
 <body>
-<div id="top">🤖 NASAR AI • Tera Personal Assistant</div>
+<div id="top">🤖 NASAR AI • Ready</div>
 <div id="chat"></div>
-<div id="error"></div>
 <div id="bar">
-<input id="msg" type="text" placeholder="Yahan likh Nasar...">
-<button id="sendBtn">Send</button>
+<input id="msg" placeholder="Yahan likh...">
+<button id="sendBtn" type="button">Send</button>
 </div>
-
 <script>
-// YAHAN APNI NAYI KEY DALNA HAI
 const GROQ_API_KEY = "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";
-
 const chatBox = document.getElementById('chat');
 const msgInput = document.getElementById('msg');
 const sendBtn = document.getElementById('sendBtn');
-const errorBox = document.getElementById('error');
 
-function addMsg(text, type){
-  const div = document.createElement('div');
-  div.className = 'bubble ' + type;
-  div.innerText = text;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-  return div;
+function addMsg(t,c){
+ let d=document.createElement('div');
+ d.className='bubble '+c;
+ d.innerText=t;
+ chatBox.appendChild(d);
+ chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-function showError(t){
-  errorBox.style.display='block';
-  errorBox.innerText=t;
+function sendMessage(){
+ let q = msgInput.value.trim();
+ if(!q) return;
+ addMsg(q,'me');
+ msgInput.value='';
+ 
+ if(GROQ_API_KEY.includes("YAHAN_APNI")){
+   addMsg("Bhai Line 32 pe key daal de pehle!","bot");
+   return;
+ }
+ let bot = document.createElement('div');
+ bot.className='bubble bot';
+ bot.innerText='Soch raha hu...';
+ chatBox.appendChild(bot);
+ 
+ fetch("https://api.groq.com/openai/v1/chat/completions",{
+  method:"POST",
+  headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_API_KEY},
+  body:JSON.stringify({model:"llama-3.1-8b-instant",messages:[{role:"user",content:q}]})
+ }).then(r=>r.json()).then(j=>{
+  if(j.error) bot.innerText="Error: "+j.error.message;
+  else bot.innerText=j.choices[0].message.content;
+ }).catch(e=>{bot.innerText="Error: "+e.message});
 }
 
-async function sendMessage(){
-  const text = msgInput.value.trim();
-  if(!text) return;
-  
-  if(GROQ_API_KEY.includes("YAHAN_APNI")) {
-    addMsg("Bhai pehle Groq ki NAYI key daal de code me! Warna kaam nahi karega.", "bot");
-    showError("API KEY missing hai - code me key paste karo");
-    return;
-  }
+sendBtn.addEventListener('click', sendMessage);
+sendBtn.addEventListener('touchend', function(e){ e.preventDefault(); sendMessage(); });
+msgInput.addEventListener('keydown', function(e){ if(e.key==='Enter') sendMessage(); });
 
-  addMsg(text, 'me');
-  msgInput.value = '';
-  const botMsg = addMsg('Soch raha hu...', 'bot');
-
-  try{
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":"Bearer "+GROQ_API_KEY
-      },
-      body:JSON.stringify({
-        model:"llama-3.1-8b-instant",
-        messages:[
-          {role:"system", content:"You are NASAR AI, personal assistant of Nasar Khan from Bihar. Talk in Hinglish friendly. Help with code, files, homework everything."},
-          {role:"user", content:text}
-        ]
-      })
-    });
-    const data = await res.json();
-    console.log(data);
-    if(data.error){
-      botMsg.innerText = "Groq Error: " + (data.error.message || JSON.stringify(data.error));
-      showError(data.error.message);
-    } else {
-      botMsg.innerText = data.choices[0].message.content;
-    }
-  } catch(err){
-    botMsg.innerText = "Network Error: " + err.message + ". Key sahi hai kya check kar.";
-    showError(err.message);
-  }
-}
-
-sendBtn.onclick = sendMessage;
-msgInput.addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter') sendMessage();
-});
-
-// Ye message ab 100% dikhega hi
-addMsg("Hi Nasar! 👋 Main ready hu! Ab type karke Send daba.", "bot");
+addMsg("Hi Nasar! Button ab 100% kaam karega, tap kar!","bot");
+console.log("NASAR AI Loaded - Button Ready");
 </script>
 </body>
 </html>
